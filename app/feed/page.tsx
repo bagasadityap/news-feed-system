@@ -17,6 +17,7 @@ export interface Post {
   id: number;
   content: string;
   CreatedAt: string;
+  user_id?: number;
   User: User;
   isFollowing: boolean;
 }
