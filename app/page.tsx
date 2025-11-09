@@ -1,65 +1,116 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+
+export default function AuthPage() {
+  const router = useRouter();
+  const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const toggleMode = (): void => {
+    setMessage("");
+    setIsLogin(!isLogin);
+  };
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+
+    const formData = new FormData(e.currentTarget);
+    const username = String(formData.get("username") || "").trim();
+    const password = String(formData.get("password") || "").trim();
+    const passwordConfirmation = String(formData.get("passwordConfirmation") || "").trim();
+
+    if (!username || !password) {
+      setMessage("Username and password are required.");
+      setLoading(false);
+      return;
+    }
+
+    if (!isLogin && password !== passwordConfirmation) {
+      setMessage("Password confirmation does not match.");
+      setLoading(false);
+      return;
+    }
+
+    const endpoint = isLogin
+      ? "https://news-feed-system-backend-production.up.railway.app/api/login"
+      : "https://news-feed-system-backend-production.up.railway.app/api/register";
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data: { token?: string; error?: string } = await res.json();
+      if (!res.ok) throw new Error(data.error || "Unexpected error occurred.");
+
+      if (isLogin && data.token) {
+        localStorage.setItem("token", data.token);
+        setMessage("Login successful. Redirecting...");
+        setTimeout(() => router.push("/feed"), 800);
+      } else {
+        setMessage("Registration successful. Please log in.");
+        setIsLogin(true);
+      }
+    } catch (err) {
+      if (err instanceof Error) setMessage("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+        <Card className="backdrop-blur-xl bg-white/90 shadow-2xl rounded-2xl border-none">
+          <CardHeader className="text-center">
+            <h1 className="text-3xl font-bold text-gray-800">{isLogin ? "Sign In" : "Create Account"}</h1>
+            <p className="text-sm text-gray-500 mt-2">
+              {isLogin ? "Enter your credentials to continue" : "Fill in the details to create your account"}
+            </p>
+          </CardHeader>
+
+          <CardContent>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <Input placeholder="Username" type="text" className="p-3 rounded-xl" name="username" />
+
+              <div className="flex gap-3">
+                <Input placeholder="Password" type="password" className="p-3 rounded-xl flex-1" name="password" />
+                {!isLogin && <Input placeholder="Confirm" type="password" className="p-3 rounded-xl flex-1" name="passwordConfirmation" />}
+              </div>
+
+              {message && (
+                <p className={`text-sm ${message.startsWith("Login") || message.startsWith("Registration") ? "text-green-600" : "text-red-600"}`}>
+                  {message}
+                </p>
+              )}
+
+              <Button type="submit" disabled={loading} className="w-full bg-indigo-500 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-all duration-200">
+                {loading ? (isLogin ? "Logging in..." : "Registering...") : isLogin ? "Login" : "Register"}
+              </Button>
+            </form>
+          </CardContent>
+
+          <CardFooter className="text-center">
+            <p className="text-sm text-gray-600">
+              {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+              <button onClick={toggleMode} className="text-indigo-500 hover:underline font-medium">
+                {isLogin ? "Register" : "Login"}
+              </button>
+            </p>
+          </CardFooter>
+        </Card>
+      </motion.div>
     </div>
   );
 }
