@@ -17,7 +17,7 @@ export interface Post {
   id: number;
   content: string;
   CreatedAt: string;
-  user_id?: number;
+  user_id: number;
   User: User;
   isFollowing: boolean;
 }
@@ -112,6 +112,7 @@ export default function FeedPage() {
             id: p.id,
             content: p.content,
             CreatedAt: p.CreatedAt,
+            user_id: p.user_id,
             User: user,
             isFollowing,
           };

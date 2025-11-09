@@ -21,8 +21,8 @@ export default function CreatePost({ show, onClose, token, onPost, userId, usern
         body: JSON.stringify({ content: newPost }),
       });
       if (!res.ok) throw new Error("Failed to create post");
-      const created: { id: number; content: string; CreatedAt: string; user_id?: number } = await res.json();
-      const post: Post = { id: created.id, content: created.content, CreatedAt: created.CreatedAt, User: { id: userId, username }, isFollowing: false };
+      const created: { id: number; content: string; CreatedAt: string; user_id: number } = await res.json();
+      const post: Post = { id: created.id, content: created.content, CreatedAt: created.CreatedAt, user_id: created.user_id, User: { id: userId, username }, isFollowing: false };
       onPost(post);
       setNewPost(""); setCharCount(0); onClose();
     } catch (err) {
